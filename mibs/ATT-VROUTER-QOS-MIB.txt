@@ -1,0 +1,492 @@
+-- *********************************************************************
+-- ATT-VROUTER-QOS-MIB
+--
+-- Copyright (c) 2018-2019 by AT&T Intellectual Property.
+-- All rights reserved.
+--
+-- Redistribution and use in source and binary forms, with or without
+-- modification, are permitted provided that the following conditions
+-- are met:
+--
+-- 1. Redistributions of source code must retain the above copyright
+-- notice, this list of conditions and the following disclaimer.
+-- 2. Redistributions in binary form must reproduce the above
+-- copyright notice, this list of conditions and the following
+-- disclaimer in the documentation and/or other materials provided
+-- with the distribution.
+-- 3. Neither the name of the copyright holder nor the names of its
+-- contributors may be used to endorse or promote products derived
+-- from this software without specific prior written permission.
+--
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+-- 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+-- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+-- FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+-- COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+-- INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+-- BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+-- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+-- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+-- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+-- POSSIBILITY OF SUCH DAMAGE.
+--
+-- SPDX-License-Identifier: BSD-3-Clause
+--
+-- *********************************************************************
+ATT-VROUTER-QOS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    enterprises,
+    Counter64,
+    Integer32,
+    Gauge32
+            FROM SNMPv2-SMI                 -- RFC2578
+
+    TEXTUAL-CONVENTION
+            FROM SNMPv2-TC
+
+    ifIndex,
+    InterfaceIndex
+            FROM IF-MIB                     -- RFC2863
+
+    SnmpAdminString
+            FROM SNMP-FRAMEWORK-MIB
+;
+
+attvRouterQosMIB MODULE-IDENTITY
+     LAST-UPDATED "201901240000Z" -- January 24, 2019
+     ORGANIZATION "AT&T Inc."
+     CONTACT-INFO
+     "Postal: 208 S. Akard Street
+              Dallas, TX 25202
+      Web:    www.att.com
+     "
+     DESCRIPTION
+         "This MIB describes objects used to provide QoS details of
+	  the Vyatta vRouter.
+
+          Copyright (C) 2018-2019, AT&T Intellectual Property.
+         "
+     REVISION "201901240000Z" -- January 24, 2019
+     DESCRIPTION
+         "Adjust the table indices to include the VLAN ID associated
+          with a QoS policy."
+     REVISION "201806250000Z" -- June 25, 2018
+     DESCRIPTION
+         "Initial version"
+     ::= { attVrouter 1 }
+
+attEnterprise   OBJECT IDENTIFIER ::= { enterprises 74 }
+attProducts     OBJECT IDENTIFIER ::= { attEnterprise 1 }
+attVrouter      OBJECT IDENTIFIER ::= { attProducts 32 }
+
+--
+-- top level objects
+--
+vRouterQosShaperObjects OBJECT IDENTIFIER ::= { attvRouterQosMIB 1 }
+vRouterQosTrafficClassStats OBJECT IDENTIFIER ::= { attvRouterQosMIB 2 }
+vRouterQosClassMatchStats OBJECT IDENTIFIER ::= { attvRouterQosMIB 3 }
+vRouterQosInterfaceQueueStats OBJECT IDENTIFIER ::= { attvRouterQosMIB 4 }
+vRouterQosDscpWredMapStats OBJECT IDENTIFIER ::= { attvRouterQosMIB 5 }
+
+QosTrafficClassId ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS current
+    DESCRIPTION
+               "vRouter QoS Traffic Class Identifier"
+    SYNTAX Integer32 (0..3)
+
+QosTrafficClassQueueId ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS current
+    DESCRIPTION
+               "vRouter QoS Traffic Class Queue Identifier"
+    SYNTAX Integer32 (0..7)
+
+QosShaperClassId ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS current
+    DESCRIPTION
+               "vRouter QoS Shaper Class Identifier"
+    SYNTAX Integer32 (0..255)
+
+QosClassMatchRuleId ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS current
+    DESCRIPTION
+               "vRouter QoS Shaper Class Match Rule Identifier"
+    SYNTAX Integer32 (1..9999)
+
+QosVlanId ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS current
+    DESCRIPTION
+               "vRouter QoS VLAN Identifier"
+    SYNTAX Integer32 (0..4094)
+
+qosShaperProfileTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF QosShaperProfileEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"This table lists the interfaces, shaper classes and
+	the attached QoS profile."
+    ::= { vRouterQosShaperObjects 1 }
+
+qosShaperProfileEntry OBJECT-TYPE
+    SYNTAX QosShaperProfileEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Each entry in this table provides the ifIndex, QoS Shaper
+        Class identifier (0..255) together with the attached QoS
+        profile name."
+    INDEX { ifIndex, qosVlan, qosShaperClass }
+    ::= { qosShaperProfileTable 1 }
+
+QosShaperProfileEntry ::= SEQUENCE {
+    qosShaperClass QosShaperClassId,
+    qosInterface InterfaceIndex,
+    qosVlan QosVlanId,
+    qosProfileName SnmpAdminString
+    }
+
+qosShaperClass OBJECT-TYPE
+    SYNTAX     QosShaperClassId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The shaper class identifier associated with this profile."
+    ::= { qosShaperProfileEntry 1 }
+
+qosInterface OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The QoS-enabled interface associated with the profile."
+    ::= { qosShaperProfileEntry 2 }
+
+qosProfileName OBJECT-TYPE
+    SYNTAX     SnmpAdminString
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The QoS profile name attached to the shaper class."
+    ::= { qosShaperProfileEntry 3 }
+
+qosVlan OBJECT-TYPE
+    SYNTAX     QosVlanId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The vlan on the interface is the same entry to which a QoS policy
+             has been applied. If this object is 0, no vlan is considered to be
+             specified and the associated policy applies to the whole interface.
+             VLAN IDs 1-4094 are considered valid and the policy specified
+             only applies to indicated vlan.
+            "
+    ::= { qosShaperProfileEntry 4 }
+
+qosTCStatsTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF QosTCStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table lists the aggregated QoS Traffic Class
+        statistical information for a particular interface."
+    ::= { vRouterQosTrafficClassStats 1 }
+
+qosTCStatsEntry OBJECT-TYPE
+    SYNTAX QosTCStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Each entry in the table describes the statistical information
+         about a specific Traffic Class (0..3)."
+    INDEX { ifIndex, qosVlan, qosTCIndex }
+    ::= { qosTCStatsTable 1 }
+
+QosTCStatsEntry ::= SEQUENCE {
+    qosTCIndex QosTrafficClassId,
+    qosTCPkts Counter64,
+    qosTCBytes Counter64,
+    qosTCTailDropPkts Counter64,
+    qosTCREDDropPkts Counter64
+    }
+
+qosTCIndex OBJECT-TYPE
+    SYNTAX     QosTrafficClassId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The Traffic Class identifier (0..3)"
+    ::= { qosTCStatsEntry 1 }
+
+qosTCPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of packets classified into the indicated
+        Traffic Class."
+    ::= { qosTCStatsEntry 2 }
+
+qosTCBytes OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of bytes classified into the indicated
+        Traffic Class."
+    ::= { qosTCStatsEntry 3 }
+
+qosTCTailDropPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of packets classified into the indicated
+        Traffic Class but subsequently discarded through the action of
+        Tail-drop queuing."
+    ::= { qosTCStatsEntry 4 }
+
+qosTCREDDropPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of packets classified into the indicated
+        Traffic Class but subsequently discarded through the action of
+        Random Early Detection (RED) queuing."
+    ::= { qosTCStatsEntry 5 }
+
+
+qosClassMatchTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF QosClassMatchEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table specifies the QoS Shaper Class Match related
+        statistical information."
+    ::= { vRouterQosClassMatchStats 1 }
+
+qosClassMatchEntry OBJECT-TYPE
+    SYNTAX QosClassMatchEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Each entry lists the counters associated with an individual
+        class match instance."
+    INDEX { ifIndex, qosVlan, qosCMIndex }
+    ::= { qosClassMatchTable 1 }
+
+QosClassMatchEntry ::= SEQUENCE {
+    qosCMIndex QosClassMatchRuleId,
+    qosCMTClass QosTrafficClassId,
+    qosCMPkts Counter64,
+    qosCMBytes Counter64,
+    qosCMExceededPkts Counter64,
+    qosCMExceededBytes Counter64
+    }
+
+qosCMIndex OBJECT-TYPE
+    SYNTAX     QosClassMatchRuleId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The class match rule index"
+    ::= { qosClassMatchEntry 1 }
+
+qosCMTClass OBJECT-TYPE
+    SYNTAX     QosTrafficClassId
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The parent traffic class associated with this match instance"
+    ::= { qosClassMatchEntry 2 }
+
+qosCMPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of packets that matched the indicated Shaper
+	 class and rule."
+    ::= { qosClassMatchEntry 3 }
+
+qosCMBytes OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of bytes that matched the indicated Shaper
+        class and rule."
+    ::= { qosClassMatchEntry 4 }
+
+qosCMExceededPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"If a bandwidth expression has been applied to a policy
+	profile, this is the total number of matched packets that had
+	to be discarded because they exceeded the defined bandwidth."
+    ::= { qosClassMatchEntry 5 }
+
+qosCMExceededBytes OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of bytes that matched the Shaper class, but
+        had to be discarded due to bandwidth limitations."
+    ::= { qosClassMatchEntry 6 }
+
+qosInterfaceQueueTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF QosInterfaceQueueEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the statistical information for QoS
+        queuing for a particular interface."
+    ::= { vRouterQosInterfaceQueueStats 1 }
+
+qosInterfaceQueueEntry OBJECT-TYPE
+    SYNTAX QosInterfaceQueueEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Each entry lists the counters associated with an individual
+        queue attached to a particular Interface, Shaper Class and
+        Traffic Class combination."
+    INDEX { ifIndex, qosVlan, qosIfQShaperClass, qosIfQTrafficClass, qosIfQIndex }
+    ::= { qosInterfaceQueueTable 1 }
+
+QosInterfaceQueueEntry ::= SEQUENCE {
+    qosIfQShaperClass QosShaperClassId,
+    qosIfQTrafficClass QosTrafficClassId,
+    qosIfQIndex QosTrafficClassQueueId,
+    qosIfQLength Gauge32,
+    qosIfQPkts Counter64,
+    qosIfQBytes Counter64,
+    qosIfQTailDropPkts Counter64,
+    qosIfQREDDropPkts Counter64
+    }
+
+qosIfQShaperClass OBJECT-TYPE
+    SYNTAX     QosShaperClassId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The shaper class identifier"
+    ::= { qosInterfaceQueueEntry 1 }
+
+qosIfQTrafficClass OBJECT-TYPE
+    SYNTAX     QosTrafficClassId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+	"The Traffic Class Identifier assigned to the indicated Shaper
+	Class"
+    ::= { qosInterfaceQueueEntry 2 }
+
+qosIfQIndex OBJECT-TYPE
+    SYNTAX     QosTrafficClassQueueId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+	"The queue number assigned to the indicated Traffic Class"
+    ::= { qosInterfaceQueueEntry 3 }
+
+qosIfQLength OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+	"The current length of the indicated queue"
+    ::= { qosInterfaceQueueEntry 4 }
+
+qosIfQPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"The total number of packets processed by this queue"
+    ::= { qosInterfaceQueueEntry 5 }
+
+qosIfQBytes OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of bytes processed by this queue"
+    ::= { qosInterfaceQueueEntry 6 }
+
+qosIfQTailDropPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The total number of packets assigned to this queue but
+        subsequently discarded through the action of Tail-drop
+        queuing."
+    ::= { qosInterfaceQueueEntry 7 }
+
+qosIfQREDDropPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"The total number of packets assigned to this queue but
+	subsequently discarded through the action of Random Early
+	Detection (RED) queuing."
+    ::= { qosInterfaceQueueEntry 8 }
+
+qosDSCPWREDMapTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF QosDSCPWREDMapEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table defines the statistical information for QoS
+        queuing for a particular interface."
+    ::= { vRouterQosDscpWredMapStats 1 }
+
+qosDSCPWREDMapEntry OBJECT-TYPE
+    SYNTAX QosDSCPWREDMapEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Each entry lists the counters associated with an individual
+        queue attached to a particular Interface, Shaper Class and
+        Traffic Class combination."
+    INDEX { ifIndex, qosVlan, qosIfQShaperClass, qosIfQTrafficClass, qosIfQIndex,
+            qosDSCPWREDMapName }
+    ::= { qosDSCPWREDMapTable 1 }
+
+QosDSCPWREDMapEntry  ::= SEQUENCE {
+    qosDSCPWREDMapName SnmpAdminString,
+    qosDSCPWREDMapDropPkts Counter64
+    }
+
+qosDSCPWREDMapName OBJECT-TYPE
+    SYNTAX SnmpAdminString
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+	"The configured DSCP resource group name."
+    ::= { qosDSCPWREDMapEntry 1 }
+
+qosDSCPWREDMapDropPkts OBJECT-TYPE
+    SYNTAX Counter64
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+	"The number of packets assigned to the named DSCP group but
+	subsequently discarded due to the actions of WRED."
+    ::= { qosDSCPWREDMapEntry 2 }
+
+END

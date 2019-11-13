@@ -1,0 +1,232 @@
+-- *********************************************************************
+-- ATT-VROUTER-ENTITY-SENSOR-MIB
+--
+-- Copyright (c) 2018-2019 by AT&T Intellectual Property.
+-- All rights reserved.
+--
+-- Redistribution and use in source and binary forms, with or without
+-- modification, are permitted provided that the following conditions
+-- are met:
+--
+-- 1. Redistributions of source code must retain the above copyright
+-- notice, this list of conditions and the following disclaimer.
+-- 2. Redistributions in binary form must reproduce the above
+-- copyright notice, this list of conditions and the following
+-- disclaimer in the documentation and/or other materials provided
+-- with the distribution.
+-- 3. Neither the name of the copyright holder nor the names of its
+-- contributors may be used to endorse or promote products derived
+-- from this software without specific prior written permission.
+--
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+-- 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+-- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+-- FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+-- COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+-- INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+-- BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+-- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+-- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+-- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+-- POSSIBILITY OF SUCH DAMAGE.
+--
+-- SPDX-License-Identifier: BSD-3-Clause
+--
+-- *********************************************************************
+ATT-VROUTER-ENTITY-SENSOR-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        enterprises, NOTIFICATION-TYPE
+                FROM SNMPv2-SMI
+        entPhysicalIndex
+                FROM ENTITY-MIB
+        EntitySensorValue
+                FROM ENTITY-SENSOR-MIB
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB;
+
+attVRouterEntitySensorMIB MODULE-IDENTITY
+     LAST-UPDATED "201806180000Z"
+     ORGANIZATION "AT&T Inc."
+     CONTACT-INFO
+     "Postal: 208 S. Akard Street
+              Dallas, TX 25202
+      Web:    www.att.com
+     "
+     DESCRIPTION
+            "This module defines Entity SENSOR MIB extensions for physical
+             sensor thresholds.
+
+             Copyright (C) 2018, AT&T Intellectual Property."
+
+     REVISION        "201806180000Z"
+     DESCRIPTION
+            "Initial version"
+     ::= { attVrouter 2 }
+
+attEnterprise   OBJECT IDENTIFIER ::= { enterprises 74 }
+attProducts     OBJECT IDENTIFIER ::= { attEnterprise 1 }
+attVrouter      OBJECT IDENTIFIER ::= { attProducts 32 }
+
+entSensorThresholdNotifications        OBJECT IDENTIFIER
+     ::= { attVRouterEntitySensorMIB 0 }
+
+entSensorThresholdObjects              OBJECT IDENTIFIER
+     ::= { attVRouterEntitySensorMIB 1 }
+
+--
+-- Entity Sensor Threshold Table
+--
+
+entSensorThresholdTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF EntSensorThresholdEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+            "This table contains one row per physical sensor threshold 
+            represented by an associated row in the entPhysicalTable."
+    ::= { entSensorThresholdObjects 1 }
+
+entSensorThresholdEntry OBJECT-TYPE
+    SYNTAX        EntSensorThresholdEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+            "Each entry provides physical sensor threshold information,
+            the sensor index, the lower and upper critical, non-critical
+            and non-recoverable sensor thresholds."
+    INDEX  { entPhysicalIndex }
+    ::= { entSensorThresholdTable 1 }
+
+EntSensorThresholdEntry ::= SEQUENCE {
+        entSensorThresholdLNR             EntitySensorValue,
+        entSensorThresholdLCR             EntitySensorValue,
+        entSensorThresholdLNC             EntitySensorValue,
+        entSensorThresholdUNR             EntitySensorValue,
+        entSensorThresholdUCR             EntitySensorValue,
+        entSensorThresholdUNC             EntitySensorValue,
+        entSensorTriggerReading           EntitySensorValue,
+        entSensorTriggerThreshold         EntitySensorValue,
+        entSensorTriggerDescription       SnmpAdminString
+}
+
+entSensorThresholdLNR OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "Lower non-recoverable sensor value associated with the
+            sensor object."
+    ::= { entSensorThresholdEntry 1 }
+
+entSensorThresholdLCR OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "Lower critical sensor value associated with the
+            sensor object."
+    ::= { entSensorThresholdEntry 2 }
+
+entSensorThresholdLNC OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "Lower non-critical sensor value associated with the
+            sensor object."
+    ::= { entSensorThresholdEntry 3 }
+
+entSensorThresholdUNR OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "Upper non-recoverable sensor value associated with the
+            sensor object."
+    ::= { entSensorThresholdEntry 4 }
+
+entSensorThresholdUCR OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "Lower critical sensor value associated with the
+            sensor object."
+    ::= { entSensorThresholdEntry 5 }
+
+entSensorThresholdUNC OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "Lower non-critical sensor value associated with the
+            sensor object."
+    ::= { entSensorThresholdEntry 6 }
+
+entSensorTriggerReading OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "The sensor reading that triggered the last sensor event."
+    ::= { entSensorThresholdEntry 7 }
+
+entSensorTriggerThreshold OBJECT-TYPE
+    SYNTAX        EntitySensorValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "The threshold value that triggered the last sensor event."
+    ::= { entSensorThresholdEntry 8 }
+
+entSensorTriggerDescription OBJECT-TYPE
+    SYNTAX        SnmpAdminString
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+            "The description of the last triggered sensor event."
+    ::= { entSensorThresholdEntry 9 }
+
+--
+-- entSensorThresholdNotifications
+--
+
+entSensorThresholdNonRecoverable NOTIFICATION-TYPE
+    OBJECTS { entSensorTriggerReading,
+              entSensorTriggerThreshold,
+              entSensorTriggerDescription
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification indicates that the sensor value
+            has hit a non-recoverable sensor threshold value."
+    ::= { entSensorThresholdNotifications 1 }
+
+
+entSensorThresholdCritical NOTIFICATION-TYPE
+    OBJECTS { entSensorTriggerReading,
+              entSensorTriggerThreshold,
+              entSensorTriggerDescription
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification indicates that the sensor value
+            has hit a critical sensor threshold value."
+    ::= { entSensorThresholdNotifications 2 }
+
+
+entSensorThresholdNonCritical NOTIFICATION-TYPE
+    OBJECTS { entSensorTriggerReading,
+              entSensorTriggerThreshold,
+              entSensorTriggerDescription
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification indicates that the sensor value
+            has hit a non-critical sensor threshold value."
+    ::= { entSensorThresholdNotifications 3 }
+
+END

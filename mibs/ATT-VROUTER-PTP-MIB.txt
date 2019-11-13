@@ -1,0 +1,100 @@
+-- *********************************************************************
+-- ATT-VROUTER-PTP-MIB
+--
+-- Copyright (c) 2018-2019 by AT&T Intellectual Property.
+-- All rights reserved.
+--
+-- Redistribution and use in source and binary forms, with or without
+-- modification, are permitted provided that the following conditions
+-- are met:
+--
+-- 1. Redistributions of source code must retain the above copyright
+-- notice, this list of conditions and the following disclaimer.
+-- 2. Redistributions in binary form must reproduce the above
+-- copyright notice, this list of conditions and the following
+-- disclaimer in the documentation and/or other materials provided
+-- with the distribution.
+-- 3. Neither the name of the copyright holder nor the names of its
+-- contributors may be used to endorse or promote products derived
+-- from this software without specific prior written permission.
+--
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+-- 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+-- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+-- FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+-- COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+-- INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+-- BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+-- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+-- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+-- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+-- POSSIBILITY OF SUCH DAMAGE.
+--
+-- SPDX-License-Identifier: BSD-3-Clause
+--
+-- *********************************************************************
+ATT-VROUTER-PTP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    enterprises
+            FROM SNMPv2-SMI                 -- RFC2578
+
+    NOTIFICATION-TYPE
+            FROM SNMPv2-SMI
+
+    ptpbaseClockRunningState
+            FROM PTPBASE-MIB
+;
+
+attVrouterPtpMIB MODULE-IDENTITY
+     LAST-UPDATED "201909260000Z" -- Sep 26, 2019
+     ORGANIZATION "AT&T Inc."
+     CONTACT-INFO
+     "Postal: 208 S. Akard Street
+              Dallas, TX 25202
+      Web:    www.att.com
+     "
+     DESCRIPTION
+         "This MIB describes objects used to signal PTP
+          notifications from the Vyatta vRouter.
+
+          Copyright (C) 2019, AT&T Intellectual Property.
+         "
+
+     REVISION "201909260000Z" -- Sep 26, 2019
+     DESCRIPTION
+          "Add attVrouterPtpServoRecovery"
+     REVISION "201903210000Z" -- Mar 21, 2019
+     DESCRIPTION
+         "Initial version"
+     ::= { attVrouter 5 }
+
+attEnterprise              OBJECT IDENTIFIER ::= { enterprises 74 }
+attProducts                OBJECT IDENTIFIER ::= { attEnterprise 1 }
+attVrouter                 OBJECT IDENTIFIER ::= { attProducts 32 }
+
+attVrouterPtpNotifications OBJECT IDENTIFIER ::= { attVrouterPtpMIB 0 }
+
+attVrouterPtpServoFailure NOTIFICATION-TYPE
+    OBJECTS {
+              ptpbaseClockRunningState
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification indicates that the indicated
+             clock's servo is not in a locked stated."
+    ::= { attVrouterPtpNotifications 1 }
+
+attVrouterPtpServoRecovery NOTIFICATION-TYPE
+    OBJECTS {
+              ptpbaseClockRunningState
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification indicates that the indicated
+             clock's servo is now in a locked stated."
+    ::= { attVrouterPtpNotifications 2 }
+
+END

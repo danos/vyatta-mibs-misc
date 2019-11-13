@@ -1,0 +1,667 @@
+-- *********************************************************************
+-- ATT-VROUTER-STORM-CONTROL-MIB
+--
+-- Copyright (c) 2018-2019 by AT&T Intellectual Property.
+-- All rights reserved.
+--
+-- Redistribution and use in source and binary forms, with or without
+-- modification, are permitted provided that the following conditions
+-- are met:
+--
+-- 1. Redistributions of source code must retain the above copyright
+-- notice, this list of conditions and the following disclaimer.
+-- 2. Redistributions in binary form must reproduce the above
+-- copyright notice, this list of conditions and the following
+-- disclaimer in the documentation and/or other materials provided
+-- with the distribution.
+-- 3. Neither the name of the copyright holder nor the names of its
+-- contributors may be used to endorse or promote products derived
+-- from this software without specific prior written permission.
+--
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+-- 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+-- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+-- FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+-- COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+-- INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+-- BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+-- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+-- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+-- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+-- POSSIBILITY OF SUCH DAMAGE.
+--
+-- SPDX-License-Identifier: BSD-3-Clause
+--
+-- *********************************************************************
+ATT-VROUTER-STORM-CONTROL-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    enterprises,
+    Counter64,
+    Integer32,
+    Gauge32
+            FROM SNMPv2-SMI                 -- RFC2578
+
+    NOTIFICATION-GROUP
+            FROM SNMPv2-CONF
+
+    TEXTUAL-CONVENTION
+            FROM SNMPv2-TC
+
+    ifIndex,
+    InterfaceIndex
+            FROM IF-MIB                     -- RFC2863
+
+    SnmpAdminString
+            FROM SNMP-FRAMEWORK-MIB
+;
+
+attVrouterStormControlMIB MODULE-IDENTITY
+     LAST-UPDATED "201808310000Z" -- Aug 31, 2018
+     ORGANIZATION "AT&T Inc."
+     CONTACT-INFO
+     "Postal: 208 S. Akard Street
+              Dallas, TX 25202
+      Web:    www.att.com
+     "
+     DESCRIPTION
+         "This MIB describes objects used to provide L2 traffic storm control
+	  information about the Vyatta vRouter.
+
+	  Copyright (C) 2018, AT&T Intellectual Property.
+	 "
+
+     REVISION "201808310000Z" -- Aug 31, 2018
+     DESCRIPTION
+         "Initial version"
+     ::= { attVrouter 4 }
+
+attEnterprise   OBJECT IDENTIFIER ::= { enterprises 74 }
+attProducts     OBJECT IDENTIFIER ::= { attEnterprise 1 }
+attVrouter      OBJECT IDENTIFIER ::= { attProducts 32 }
+
+--
+-- A traffic storm occurs when packets flood the network consuming
+-- precious bandwidth in the network and potentially placing a higher
+-- load on systems processing the traffic. Storm control (also known
+-- as traffic suppression) is a mechanism to mitigate the effect of
+-- the storm, by controlling the amount of traffic received on
+-- specific interfaces or specific vlans on specific interfaces.
+-- Storm control is accomplished by defining traffic profiles containing
+-- thresholds for unicast, multicast and broadcast traffic and associating
+-- the profiles with specific interfaces or vlans on interfaces.
+--
+-- The storm control MIB allows the Network Management Station
+-- to configure and monitor the storm control feature on supported
+-- physical interfaces and vlans. The storm control feature maintains
+-- statistics for suppressed packets and can also be configured to send
+-- notifications to the management station upon detection of a traffic storm.
+--
+
+--
+-- MIB Groups
+--
+
+attVrStormCtlMIBNotifications OBJECT IDENTIFIER ::= { attVrouterStormControlMIB 0 }
+attVrStormCtlMIBObjects OBJECT IDENTIFIER ::= { attVrouterStormControlMIB 1 }
+attVrStormCtlMIBConform OBJECT IDENTIFIER ::= { attVrouterStormControlMIB 2 }
+attVrStormCtlConfigObjects OBJECT IDENTIFIER ::= { attVrStormCtlMIBObjects 1 }
+attVrStormCtlStatusObjects OBJECT IDENTIFIER ::= { attVrStormCtlMIBObjects 2 }
+
+--
+-- Textual Conventions
+--
+
+--
+-- Traffic Types that can be regulated by Storm Control
+--
+
+attVrStormCtlTrafficType ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION
+            "The type of traffic that can be configured to be
+            regulated per physical interface."
+        SYNTAX INTEGER {
+            broadcast (1),
+            multicast (2),
+            unicast   (3),
+        }
+
+--
+-- Threshold types that can be set
+--
+
+attVrStormCtlThresholdType ::= TEXTUAL-CONVENTION
+        STATUS       current
+	DESCRIPTION
+	    "The type of threshold configured in the policy.
+
+             percent  -  indicates that the threshold should be the
+             specified percent of the line rate of the interface to
+             which the policy is applied
+
+             absolute -  indicates that the threshold is an absolute
+             value in Kilobits per second
+            "
+	SYNTAX INTEGER {
+	    percent (1),
+            absolute (2),
+        }
+
+--
+-- Storm control Actions that the user can configure on a port
+--
+attVrStormCtlActionType ::= TEXTUAL-CONVENTION
+        STATUS  current
+        DESCRIPTION
+            "The type of storm control action that is configured on
+            a port.
+
+            An action of shutdown indicates that the port should be
+            shutdown if a storm event is detected on a port."
+
+        SYNTAX INTEGER {
+            shutdown  (1)
+        }
+
+
+attVrStormCtlStatusType ::= TEXTUAL-CONVENTION
+        STATUS  current
+        DESCRIPTION
+            "The current status of storm control on a given
+            interface for a given traffic type.
+
+            inactive - Indicates that storm control is not enabled
+                       for the given traffic type.
+
+            forwarding - Indicates that storm control is monitoring
+                         the traffic type, but no storm event has
+                         been detected.
+
+            trafficTypeFiltered - Indicates that a storm event has
+                                  has occurred and the particular
+                                  traffic type is being filtered
+
+            shutdown -  Indicates that the interface has been
+                        shutdown in response to a storm event."
+
+        SYNTAX  INTEGER {
+            inactive            (1),
+            forwarding          (2),
+            trafficTypeFiltered (3),
+            shutdown            (4)
+        }
+
+
+--
+-- Storm Control Configuration
+-- A management station needs to perform the following actions in
+-- order to enable storm control on an interface
+-- a) Define a storm control profile containing thresholds for the
+--    traffic types of interest and the actions to take if a traffic
+--    storm is detected
+-- b) Associate the storm control profile with the appropriate interface
+
+attVrStormCtlProfileTable OBJECT-TYPE
+        SYNTAX     SEQUENCE OF attVrStormCtlProfileEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+	    "A table of storm control profile entries."
+	::= { attVrStormCtlConfigObjects 1 }
+
+
+attVrStormCtlProfileEntry OBJECT-TYPE
+        SYNTAX     attVrStormCtlProfileType
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+	    "Storm control profile definition."
+	INDEX { attVrStormCtlProfileName }
+	::= { attVrStormCtlProfileTable 1 }
+
+
+attVrStormCtlProfileType ::=
+        SEQUENCE {
+	    profileName           attVrStormCtlProfileName,
+            thresholds            attVrStormCtlThresholdTable,
+            actions               attVrStormCtlActionTable,
+        }
+
+
+attVrStormCtlProfileName OBJECT-TYPE
+        SYNTAX      SnmpAdminString
+	MAX-ACCESS  read-only
+	STATUS      current
+	DESCRIPTION
+	    "Name of storm control profile."
+	::= { attVrStormCtlProfileEntry 1 }
+
+
+attVrStormCtlThresholdTable  OBJECT-TYPE
+        SYNTAX     SEQUENCE OF attVrStormCtlThresholdEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+            "A table of storm control threshold configuration entries."
+        ::= { attVrStormCtlProfileEntry 2 }
+
+
+attVrStormCtlThresholdEntry  OBJECT-TYPE
+        SYNTAX      attVrStormCtlThresholdEntryType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "A collection of storm control threshold configuration
+            entries.
+
+            Storm control can be configured for multiple traffic types
+            on a given interface. One entry is created for each
+	    interface and the traffic type that can be monitored by
+	    the device."
+
+        INDEX  { ifIndex, avscVlan, attVrStormCtlTrafficType }
+        ::= { attVrStormCtlThresholdTable 1 }
+
+
+attVrStormCtlThresholdEntryType  ::=
+        SEQUENCE {
+            avscTrafficType             attVrStormCtlTrafficType,
+	    avscThresholdType           attVrStormCtlThresholdType,
+            avscThreshold               INTEGER,
+        }
+
+
+avscTrafficType  OBJECT-TYPE
+        SYNTAX      attVrStormCtlTrafficType
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+            "This object identifies a particular traffic type
+            for which a management station desires to configure
+            storm control."
+        ::= { attVrStormCtlThresholdEntry 1 }
+
+avscThresholdType       OBJECT-TYPE
+        SYNTAX       attVrStormCtlThresholdType
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION
+            "This object identifies the type of threshold configured
+             as part of this threshold entry."
+	::= { attVrStormCtlThresholdEntry 2}
+
+avscThreshold           OBJECT-TYPE
+        SYNTAX       INTEGER (0..100000000)
+        UNITS        "Percent or Kilobits per second"
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION
+            "This object represents the threshold of total
+            amount of a particular traffic type that can be seen
+            on a given interface, after which a storm event is
+            declared and storm control action is taken.
+
+            The value represents the traffic in percent of line rate or
+            kilobits per second. The value is interpreted based on the
+            value of avscThresholdType in the same entry.
+
+            For example, if a management station sets the value of
+            attVrStormCtlThreshold.3.1 as 4000, it means the
+            following:
+                a) storm control is enabled on the interface with
+                   ifIndex = 3 for broadcast (1) packets
+                b) if the broadcast traffic received per second
+                   on the interface is more than (4000 kbps) of
+                   the total interface bandwidth, then the system will
+                   take storm control actions, as indicated by
+                   attVrStormCtlAction.3 .
+
+            The default value of this object is implementation-dependent."
+
+        ::= { attVrStormCtlThresholdEntry 3 }
+
+
+attVrStormCtlActionTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF attVrStormCtlAction
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "A table of storm control action entries."
+        ::= { attVrStormCtlProfileEntry 3 }
+
+
+attVrStormCtlAction  OBJECT-TYPE
+        SYNTAX       attVrStormCtlActionType
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION
+            "This object represents the storm control action
+            taken when the traffic of a particular type exceeds
+            the configured upper threshold values."
+
+        ::= { attVrStormCtlActionTable 1 }
+
+--
+-- Storm control interface table
+--
+attVrStormCtlIntfTable OBJECT-TYPE
+        SYNTAX     SEQUENCE OF attVrStormCtlIntfEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+	    "A table of entries defining the association between interfaces
+             and profiles."
+	::= { attVrStormCtlConfigObjects 2 }
+
+
+attVrStormCtlIntfEntry OBJECT-TYPE
+        SYNTAX     attVrStormCtlIntfEntryType
+        MAX-ACCESS not-accessible
+        STATUS     current
+	DESCRIPTION
+	    "An entry in the storm control interface table. Each entry contains
+             an interface (or an interface and vlan combination) and the storm
+             control profile associated with it."
+	INDEX{ ifIndex, avscVlan }
+        ::= { attVrStormCtlIntfTable 1 }
+
+
+attVrStormCtlIntfEntryType ::=
+        SEQUENCE {
+	    avscInterface             InterfaceIndex,
+            avscVlan                  INTEGER,
+	    avscProfileName           attVrStormCtlProfileName,
+        }
+
+
+avscInterface OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+            "The interface index of the interface to which a storm control policy
+             is applied."
+        ::= { attVrStormCtlIntfEntry 1 }
+
+
+avscVlan OBJECT-TYPE
+        SYNTAX      INTEGER(0..4094)
+        MAX-ACCESS  read-write
+	STATUS      current
+        DESCRIPTION
+            "The vlan on the interface in the same entry to which a storm control
+             policy is applied. If this object is 0, no vlan is considered to be
+             specified and the associated policy applies to the whole interface.
+             Vlan IDs 1-4094 are considered valid and the policy specified applies
+             to only the specified vlan.
+            "
+        ::= { attVrStormCtlIntfEntry 2 }
+
+
+avscProfileName OBJECT-TYPE
+        SYNTAX      attVrStormCtlProfileName
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+            "The name of the storm control profile associated with the interface in
+             this entry."
+        ::= { attVrStormCtlIntfEntry 3 }
+
+
+--
+-- Global Storm control notification configuration
+--
+attVrStormCtlNotificationThreshold  OBJECT-TYPE
+        SYNTAX      INTEGER (0..1000)
+	UNITS       "Notifications per Minute"
+	MAX-ACCESS  read-write
+        STATUS      current
+	DESCRIPTION
+	    "The value of object controls the global rate of storm
+	    control notifications generated by an entity per minute.
+
+	    A value of 0 indicates no limit, and the entity will
+	    generate notifications for each storm event as governed by
+	    the attVrStormCtlNotificationControl for a given interface."
+
+        ::= { attVrStormCtlConfigObjects 3 }
+
+--
+-- Storm control status information
+--
+
+attVrStormCtlStatusTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF attVrStormCtlStatusEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "A table of storm control status entries."
+        ::= { attVrStormCtlStatusObjects 1 }
+
+
+attVrStormCtlStatusEntry  OBJECT-TYPE
+        SYNTAX      attVrStormCtlStatusEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "A collection of storm control status entries, one per
+             interface and traffic type.
+
+	     An entry is created for each storm control capable
+	     interface and the traffic type with the storm control
+	     status information."
+
+        INDEX { ifIndex, avscVlan, attVrStormCtlTrafficType }
+        ::= { attVrStormCtlStatusTable 1 }
+
+
+attVrStormCtlStatusEntry  ::=
+        SEQUENCE {
+            attVrStormCtlIntf              InterfaceIndex,
+            attVrStormCtlTraffic           attVrStormCtlTrafficType,
+            attVrStormCtlStatus            attVrStormCtlStatusType,
+            attVrStormCtlCurrentLevel      INTEGER,
+            attVrStormCtlSuppressedPacket  Counter64
+        }
+
+
+attVrStormCtlIntf OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "The interface associated with this entry."
+        ::= { attVrStormCtlStatusEntry 1 }
+
+
+attVrStormCtlTraffic OBJECT-TYPE
+        SYNTAX      attVrStormCtlTrafficType
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "The traffic type associated with this entry."
+        ::= { attVrStormCtlStatusEntry 2 }
+
+
+attVrStormCtlStatus  OBJECT-TYPE
+        SYNTAX      attVrStormCtlStatusType
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the status of storm control
+            on the interface (identified by ifIndex) corresponding
+            to a particular traffic type (identified by
+            attVrStormCtlTrafficType).
+
+            A value of inactive indicates that no storm control
+            has been enabled on the interface for the traffic type."
+        ::= { attVrStormCtlStatusEntry 3 }
+
+
+attVrStormCtlCurrentLevel  OBJECT-TYPE
+        SYNTAX      INTEGER(0..10000)
+        UNITS       "Kilobits per second"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the current level of traffic of
+            a particular type on a given interface in Kilobits per second."
+        ::= { attVrStormCtlStatusEntry 4 }
+
+
+attVrStormCtlSuppressedPacket  OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object represents the total number of packets
+            of a particular traffic type that have been suppressed
+            on a given interface by storm control filter action."
+
+        ::= { attVrStormCtlStatusEntry 5 }
+
+--
+-- Notifications
+--
+
+attVrStormCtlNotificationsPrefix   OBJECT IDENTIFIER ::=
+            { attVrStormCtlMIBNotifications 1 }
+
+attVrStormCtlTimestamp  OBJECT-TYPE
+        SYNTAX      DisplayString
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object represents the system timestamp at which the
+             last storm control notification was generated by the host
+             being monitored. The timestamp (represented as a string with
+             the value in UTC in RFC3339 format) is included in the events
+             sent to the monitoring station."
+
+        ::= { attVrStormCtlNotificationsPrefix 1 }
+
+
+attVrStormCtlEvent  NOTIFICATION-TYPE
+        OBJECTS { ifIndex,
+		  avscVlan,
+		  attVrStormCtlTimestamp,
+		  attVrStormCtlTrafficType,
+		  attVrStormCtlStatus,
+		  attVrStormCtlSuppressedPacket }
+        STATUS  current
+        DESCRIPTION
+            "This notification is sent by the implementation when
+            a storm event occurs on an interface with respect to
+            a particular traffic type."
+
+        ::= { attVrStormCtlNotificationsPrefix 2 }
+
+--
+-- MIB Conformance statements
+--
+
+attVrStormCtlMIBCompliances
+        OBJECT IDENTIFIER ::= { attVrStormCtlMIBConform 1 }
+
+attVrStormCtlMIBGroups
+        OBJECT IDENTIFIER ::= { attVrStormCtlMIBConform 2 }
+
+
+attVrStormCtlMIBCompliance  MODULE-COMPLIANCE
+        STATUS  current
+        DESCRIPTION
+            "The compliance statement for the AT&T vRouter storm control MIB."
+        MODULE -- This module
+        MANDATORY-GROUPS {
+            attVrStormCtlConfigurationGroup
+        }
+
+	GROUP  attVrStormCtlNotifConfigurationGroup
+	DESCRIPTION
+	    "This group is mandatory if the managed system supports
+	    notifications for storm events."
+
+	GROUP  attVrStormCtlNotificationGroup
+	DESCRIPTION
+	    "This group is mandatory if the managed system supports
+	    notifications for storm events."
+
+	GROUP  attVrStormCtlStatusGroup
+	DESCRIPTION
+	    "This group is mandatory if the storm control status
+	    information is available in the managed system."
+
+	GROUP  attVrStormCtlStatisticsGroup
+	DESCRIPTION
+	    "This group is mandatory if the storm control statistics
+	    information is available in the managed system."
+
+        OBJECT     attVrStormCtlAction
+	MIN-ACCESS read-only
+        DESCRIPTION
+	    "Write access is not required."
+
+        ::= { attVrStormCtlMIBCompliances 1 }
+
+
+attVrStormCtlConfigurationGroup  OBJECT-GROUP
+        OBJECTS {
+            attVrStormCtlProfileTable,
+            attVrStormCtlIntfTable
+        }
+        STATUS  current
+        DESCRIPTION
+            "A collection of objects to configure the Port Storm
+            Control feature on a given interface."
+        ::= { attVrStormCtlMIBGroups 1 }
+
+
+attVrStormCtlStatusGroup  OBJECT-GROUP
+        OBJECTS {
+            attVrStormCtlStatus,
+            attVrStormCtlCurrentLevel
+        }
+        STATUS  current
+        DESCRIPTION
+            "A collection of objects to provide storm control
+            status on a given interface."
+        ::= { attVrStormCtlMIBGroups 2 }
+
+
+attVrStormCtlNotificationGroup  NOTIFICATION-GROUP
+        NOTIFICATIONS {
+            attVrStormCtlEvent
+        }
+        STATUS  current
+        DESCRIPTION
+            "A collection of notification objects for user with
+            the cisco port storm control mib."
+        ::= { attVrStormCtlMIBGroups 3 }
+
+
+attVrStormCtlNotifConfigurationGroup  OBJECT-GROUP
+        OBJECTS {
+	    attVrStormCtlNotificationThreshold
+        }
+        STATUS  current
+        DESCRIPTION
+            "A collection of objects to configure notification
+	    information."
+	::= { attVrStormCtlMIBGroups 4 }
+
+
+attVrStormCtlStatisticsGroup  OBJECT-GROUP
+        OBJECTS {
+	    attVrStormCtlSuppressedPacket
+	}
+	STATUS  current
+	DESCRIPTION
+	    "A collection of objects to provide storm control
+	    statistics information."
+	::= { attVrStormCtlMIBGroups 5 }
+
+END

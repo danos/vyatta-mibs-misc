@@ -1,0 +1,24 @@
+Source: vyatta-mibs-misc
+Section: contrib/net
+Priority: optional
+Maintainer: Vyatta Package Maintainers <DL-vyatta-help@att.com>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+
+Package: vyatta-snmp-mibs-misc
+Architecture: all
+Depends:
+ ${misc:Depends}
+Description: Miscellaneous Brocade MIBs
+ SNMP MIBs added by vRouter
+Conflicts: libsnmp-base (<< 5.7.2.1+dfsg-1+vyatta4)
+Replaces: libsnmp-base (<< 5.7.2.1+dfsg-1+vyatta4)
+
+Package: vyatta-mibs-misc
+Architecture: all
+Depends:
+ ${misc:Depends}, vyatta-snmp-mibs-misc
+Description: Miscellaneous Brocade MIBs
+ Brocade and SNMP MIBs added by vRouter
+Conflicts: libsnmp-base (<< 5.7.2.1+dfsg-1+vyatta4)
+Replaces: libsnmp-base (<< 5.7.2.1+dfsg-1+vyatta4)

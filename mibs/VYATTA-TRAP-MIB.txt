@@ -1,0 +1,133 @@
+-- *********************************************************************
+-- VYATTA-TRAP-MIB
+--
+-- Copyright © 2018-2019 by AT&T Intellectual Property.
+-- Copyright (c) 2013-2017 Brocade Communications Systems, Inc.
+-- Copyright (c) 2007-2010 Vyatta, Inc.
+-- All rights reserved.
+--
+-- Redistribution and use in source and binary forms, with or without
+-- modification, are permitted provided that the following conditions
+-- are met:
+--
+-- 1. Redistributions of source code must retain the above copyright
+-- notice, this list of conditions and the following disclaimer.
+-- 2. Redistributions in binary form must reproduce the above
+-- copyright notice, this list of conditions and the following
+-- disclaimer in the documentation and/or other materials provided
+-- with the distribution.
+-- 3. Neither the name of the copyright holder nor the names of its
+-- contributors may be used to endorse or promote products derived
+-- from this software without specific prior written permission.
+--
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+-- 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+-- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+-- FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+-- COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+-- INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+-- BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+-- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+-- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+-- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+-- POSSIBILITY OF SUCH DAMAGE.
+--
+-- SPDX-License-Identifier: BSD-3-Clause
+--
+-- *********************************************************************
+VYATTA-TRAP-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+            MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE, enterprises
+                FROM SNMPv2-SMI
+            MODULE-COMPLIANCE, OBJECT-GROUP
+                FROM SNMPv2-CONF
+    ;
+
+    vyattaTrap MODULE-IDENTITY
+           LAST-UPDATED "201305060000Z" -- May 6, 2013
+           ORGANIZATION "AT&T Inc."
+           CONTACT-INFO
+                "Postal: 208 S. Akard Street
+                         Dallas, TX 75202
+                 Web:    www.att.com
+                "
+       DESCRIPTION
+          "The MIB module to describe traps for the Vyatta
+          Router."
+      ::= { enterprises 30803 1 }
+
+
+-- Trap Support Objects
+
+mgmtTrap OBJECT IDENTIFIER ::= { vyattaTrap 1 }
+mgmtEventObjects OBJECT IDENTIFIER ::= { mgmtTrap 1 }
+mgmtEvent OBJECT IDENTIFIER ::= { mgmtTrap 2 }
+
+mgmtEventUser OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The user that initiated the event the trap is reporting."
+    ::= { mgmtEventObjects 1 }
+
+
+mgmtEventSource OBJECT-TYPE
+    SYNTAX      INTEGER {
+                 unknown (0),
+                 firewall (1) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The source of the event the trap is reporting."
+    ::= { mgmtEventObjects 2 }
+
+
+mgmtEventType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                 unknown (0),
+                 added (1),
+                 deleted (2),
+                 changed (3) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The event type the trap is reporting."
+    ::= { mgmtEventObjects 3 }
+
+
+mgmtEventPrevCfg OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The previous configuration. This field is only valid
+        for mgmtEventType deleted and changed."
+    ::= { mgmtEventObjects 4 }
+
+mgmtEventCurrCfg OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current configuration. This field is only valid
+        for mgmtEventType added and changed."
+    ::= { mgmtEventObjects 5 }
+
+
+-- Traps
+
+    mgmtEventTrap NOTIFICATION-TYPE
+        OBJECTS { mgmtEventUser,
+                  mgmtEventSource,
+                  mgmtEventType,
+                  mgmtEventPrevCfg,
+                  mgmtEventCurrCfg }
+        STATUS  current
+        DESCRIPTION
+           "Notification of a configuration related event."
+   ::= { mgmtEvent 1 }
+
+END
