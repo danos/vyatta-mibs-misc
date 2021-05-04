@@ -1,3 +1,10 @@
+vyatta-mibs-misc (0.14) unstable; urgency=medium
+
+  [ Charles (Chas) Williams ]
+  * ptp: add notifications for GNSS state (Bugfix: VRVDR-54774)
+
+ -- Sharmila Podury <sharmila.podury@att.com>  Tue, 04 May 2021 07:52:26 -0700
+
 vyatta-mibs-misc (0.13) unstable; urgency=medium
 
   * DANOS Import master
