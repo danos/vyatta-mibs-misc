@@ -1,0 +1,121 @@
+-- *********************************************************************
+-- ATT-VROUTER-REBOOT-REASON-MIB
+--
+-- Copyright (c) 2021 by AT&T Intellectual Property.
+-- All rights reserved.
+--
+-- Redistribution and use in source and binary forms, with or without
+-- modification, are permitted provided that the following conditions
+-- are met:
+--
+-- 1. Redistributions of source code must retain the above copyright
+-- notice, this list of conditions and the following disclaimer.
+-- 2. Redistributions in binary form must reproduce the above
+-- copyright notice, this list of conditions and the following
+-- disclaimer in the documentation and/or other materials provided
+-- with the distribution.
+-- 3. Neither the name of the copyright holder nor the names of its
+-- contributors may be used to endorse or promote products derived
+-- from this software without specific prior written permission.
+--
+-- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+-- 'AS IS' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+-- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+-- FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+-- COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+-- INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+-- BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+-- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-- CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+-- LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+-- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+-- POSSIBILITY OF SUCH DAMAGE.
+--
+-- SPDX-License-Identifier: BSD-3-Clause
+--
+-- *********************************************************************
+ATT-VROUTER-REBOOT-REASON-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        enterprises, NOTIFICATION-TYPE
+                FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION
+                FROM SNMPv2-TC
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB;
+
+attVrouterRebootReasonMIB MODULE-IDENTITY
+     LAST-UPDATED "202105040000Z" -- May 04, 2021
+     ORGANIZATION "AT&T Inc."
+     CONTACT-INFO
+     "Postal: 208 S. Akard Street
+              Dallas, TX 75202
+      Web:    www.att.com
+     "
+     DESCRIPTION
+         "This MIB describes notification objects
+          that describe the cause of system reboot
+          for the Vyatta Vrouter.
+
+          Copyright (C) 2021 AT&T Intellectual Property.
+         "
+
+     REVISION "202105040000Z" -- May 05, 2021
+     DESCRIPTION
+         "Initial version"
+     ::= { attVrouter 7 }
+
+attEnterprise              OBJECT IDENTIFIER ::= { enterprises 74 }
+attProducts                OBJECT IDENTIFIER ::= { attEnterprise 1 }
+attVrouter                 OBJECT IDENTIFIER ::= { attProducts 32 }
+
+attVrouterRebootReasonNotifications OBJECT IDENTIFIER
+     ::= { attVrouterRebootReasonMIB 0 }
+
+attVrouterRebootReasonObjects OBJECT IDENTIFIER
+     ::= { attVrouterRebootReasonMIB 1 }
+
+RebootReasonType ::= TEXTUAL-CONVENTION
+    STATUS            current
+    DESCRIPTION
+            "An enumerated value which provides the
+            reason for reboot."
+    SYNTAX      INTEGER  {
+       powerOff(1),
+       warmReboot(2),
+       coldReboot(3),
+       imageInstall(4),
+       systemCrash(5)
+    }
+
+attVrouterRebootReasonType OBJECT-TYPE
+    SYNTAX      RebootReasonType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "A value that indicates the reason for
+            system reboot."
+    ::= { attVrouterRebootReasonObjects 1 }
+
+attVrouterRebootReasonDescr OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "A textual description of the reason for
+            system reboot."
+    ::= { attVrouterRebootReasonObjects 2 }
+
+attVrouterRebootReason NOTIFICATION-TYPE
+    OBJECTS {
+              attVrouterRebootReasonType,
+              attVrouterRebootReasonDescr
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification specifies the cause
+             of system reboot for the Vyatta Vrouter."
+    ::= { attVrouterRebootReasonNotifications 1 }
+
+END

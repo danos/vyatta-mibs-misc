@@ -25,3 +25,4 @@ mibs/ATT-VROUTER-STORM-CONTROL-MIB.txt usr/share/snmp/mibs
 mibs/PTPBASE-MIB.txt usr/share/snmp/mibs
 mibs/ATT-VROUTER-PTP-MIB.txt usr/share/snmp/mibs
 mibs/OSPF6-MIB.txt usr/share/snmp/mibs
+mibs/ATT-VROUTER-REBOOT-REASON-MIB.txt usr/share/snmp/mibs/
