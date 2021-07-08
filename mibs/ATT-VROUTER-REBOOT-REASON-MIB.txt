@@ -85,8 +85,9 @@ RebootReasonType ::= TEXTUAL-CONVENTION
        powerOff(1),
        warmReboot(2),
        coldReboot(3),
-       imageInstall(4),
-       systemCrash(5)
+       systemImageChange(4),
+       systemCrash(5),
+       other(6)
     }
 
 attVrouterRebootReasonType OBJECT-TYPE
