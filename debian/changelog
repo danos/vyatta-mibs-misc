@@ -1,3 +1,10 @@
+vyatta-mibs-misc (0.15.1) unstable; urgency=medium
+
+  [ Philip Downey ]
+  * OSPFv3: Add SNMP MIB definitions (Fixes: VRVDR-54779)
+
+ -- Sharmila Podury <sharmila.podury@att.com>  Thu, 29 Jul 2021 14:44:40 -0700
+
 vyatta-mibs-misc (0.14) unstable; urgency=medium
 
   [ Charles (Chas) Williams ]
