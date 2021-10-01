@@ -3,7 +3,7 @@ Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Files: mibs/ATT-VROUTER*MIB.txt mibs/VYATTA-TRAP-MIB.txt
 Copyright: 2007-2013 Vyatta Inc.
            2014-2016 Brocade Communications Systems, Inc.
-           2017-2019 AT&T Intellectual Property.
+           2017-2021 AT&T Intellectual Property.
 License: BSD-3-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
