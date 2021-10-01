@@ -44,12 +44,15 @@ IMPORTS
     NOTIFICATION-TYPE
             FROM SNMPv2-SMI
 
+    OBJECT-TYPE
+            FROM SNMPv2-SMI
+
     ptpbaseClockRunningState
             FROM PTPBASE-MIB
 ;
 
 attVrouterPtpMIB MODULE-IDENTITY
-     LAST-UPDATED "202103230000Z" -- Mar 23, 2021
+     LAST-UPDATED "202110010000Z" -- Oct 1, 2021
      ORGANIZATION "AT&T Inc."
      CONTACT-INFO
      "Postal: 208 S. Akard Street
@@ -63,6 +66,9 @@ attVrouterPtpMIB MODULE-IDENTITY
           Copyright (C) 2019, 2021 AT&T Intellectual Property.
          "
 
+     REVISION "202110010000Z" -- Oct 1, 2021
+     DESCRIPTION
+          "Deprecate GNSS notification in favor of APTS notifications"
      REVISION "202103230000Z" -- Mar 23, 2021
      DESCRIPTION
           "Add GNSS failure and recovery notifications"
@@ -79,6 +85,15 @@ attProducts                OBJECT IDENTIFIER ::= { attEnterprise 1 }
 attVrouter                 OBJECT IDENTIFIER ::= { attProducts 32 }
 
 attVrouterPtpNotifications OBJECT IDENTIFIER ::= { attVrouterPtpMIB 0 }
+attVrouterPtpNotificationObjects OBJECT IDENTIFIER ::= { attVrouterPtpMIB 1 }
+
+attVrouterPtpNotificationReason OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "A textual explanation for the associated notification."
+    ::= { attVrouterPtpNotificationObjects 1 }
 
 attVrouterPtpServoFailure NOTIFICATION-TYPE
     OBJECTS {
@@ -104,7 +119,7 @@ attVrouterPtpGNSSFailure NOTIFICATION-TYPE
     OBJECTS {
               ptpbaseClockRunningState
             }
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
             "This notification indicates that the indicated
              clock's GNSS time source has failed."
@@ -114,10 +129,32 @@ attVrouterPtpGNSSRecovery NOTIFICATION-TYPE
     OBJECTS {
               ptpbaseClockRunningState
             }
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
             "This notification indicates that the indicated
              clock's GNSS time source has recovered."
     ::= { attVrouterPtpNotifications 4 }
+
+attVrouterPtpAPTSFailure NOTIFICATION-TYPE
+    OBJECTS {
+              ptpbaseClockRunningState,
+              attVrouterPtpNotificationReason
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification indicates that the indicated
+             clock's APTS is in a failure state."
+    ::= { attVrouterPtpNotifications 5 }
+
+attVrouterPtpAPTSRecovery NOTIFICATION-TYPE
+    OBJECTS {
+              ptpbaseClockRunningState,
+              attVrouterPtpNotificationReason
+            }
+    STATUS      current
+    DESCRIPTION
+            "This notification indicates that the indicated
+             clock's APTS is now operational."
+    ::= { attVrouterPtpNotifications 6 }
 
 END
