@@ -2,6 +2,16 @@
 # -*- makefile -*-
 #export DH_VERBOSE=1
 
+SMILINT=smilint
+SMILINT_FLAGS=-l 4
+SMILINT_LOG=smilint.log
+
 %:
 	dh $@
 
+override_dh_auto_test:
+	echo "path :${CURDIR}/ietf" > ${HOME}/.smirc
+	echo -n > ${SMILINT_LOG}
+	${SMILINT} ${SMILINT_FLAGS} -p mibs/PTPBASE-MIB.txt mibs/ATT-VROUTER-PTP-MIB.txt > ${SMILINT_LOG} 2>&1
+	if [ -s ${SMILINT_LOG} ]; then cat ${SMILINT_LOG}; exit 1; fi
+	dh_auto_test
