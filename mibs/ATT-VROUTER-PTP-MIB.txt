@@ -44,6 +44,11 @@ IMPORTS
     NOTIFICATION-TYPE
             FROM SNMPv2-SMI
 
+    MODULE-COMPLIANCE,
+    NOTIFICATION-GROUP,
+    OBJECT-GROUP
+            FROM SNMPv2-CONF
+
     OBJECT-TYPE
             FROM SNMPv2-SMI
 
@@ -86,6 +91,51 @@ attVrouter                 OBJECT IDENTIFIER ::= { attProducts 32 }
 
 attVrouterPtpNotifications OBJECT IDENTIFIER ::= { attVrouterPtpMIB 0 }
 attVrouterPtpNotificationObjects OBJECT IDENTIFIER ::= { attVrouterPtpMIB 1 }
+attVrouterPtpGroups OBJECT IDENTIFIER ::= { attVrouterPtpMIB 2 }
+attVrouterPtpCompliances OBJECT IDENTIFIER ::= { attVrouterPtpMIB 3 }
+
+attVrouterPtpTrapGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { attVrouterPtpServoFailure,
+                    attVrouterPtpServoRecovery,
+                    attVrouterPtpAPTSFailure,
+                    attVrouterPtpAPTSRecovery }
+    STATUS current
+    DESCRIPTION
+        "A group that aggregates objects describing current notifications."
+    ::= { attVrouterPtpGroups 1 }
+
+attVrouterPtpOldTrapGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { attVrouterPtpGNSSFailure,
+                    attVrouterPtpGNSSRecovery }
+    STATUS deprecated
+    DESCRIPTION
+        "A group that aggregates objects describing deprecated notifications."
+    ::= { attVrouterPtpGroups 2 }
+
+attVrouterPtpTrapVarsGroup OBJECT-GROUP
+    OBJECTS { attVrouterPtpNotificationReason }
+    STATUS current
+    DESCRIPTION
+        "A group that aggregates objects sent in notifications."
+    ::= { attVrouterPtpGroups 3 }
+
+attVrouterPtpCurrentTraps MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+        "Compliance statement for agents handling notifications."
+    MODULE
+        MANDATORY-GROUPS { attVrouterPtpTrapGroup,
+                           attVrouterPtpTrapVarsGroup }
+    ::= { attVrouterPtpCompliances 1 }
+
+attVrouterPtpDeprecatedTraps MODULE-COMPLIANCE
+    STATUS deprecated
+    DESCRIPTION
+        "The attVrouterPtpOldTrapGroup is only necessary when
+         handling nofications from older entities."
+    MODULE
+        MANDATORY-GROUPS { attVrouterPtpOldTrapGroup }
+    ::= { attVrouterPtpCompliances 2 }
 
 attVrouterPtpNotificationReason OBJECT-TYPE
     SYNTAX      OCTET STRING
