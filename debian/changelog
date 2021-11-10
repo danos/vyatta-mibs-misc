@@ -1,3 +1,11 @@
+vyatta-mibs-misc (0.17) unstable; urgency=medium
+
+  * ptp: add new APTS notification for PTP (Bugfix: VRVDR-56218)
+  * ptp: add compliance MIB objects (Bugfix: VRVDR-56218)
+  * Add support for smilint (Bugfix: VRVDR-56218)
+
+ -- Charles (Chas) Williams <ciwillia@vyatta.att-mail.com>  Wed, 10 Nov 2021 11:22:22 -0500
+
 vyatta-mibs-misc (0.16) unstable; urgency=medium
 
   [ Philip Downey ]
