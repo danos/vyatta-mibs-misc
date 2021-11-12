@@ -1,3 +1,10 @@
+vyatta-mibs-misc (0.15.2) unstable; urgency=medium
+
+  * ptp: add new APTS notification for PTP (Bugfix: VRVDR-56218)
+  * ptp: add compliance MIB objects (Bugfix: VRVDR-56218)
+
+ -- Charles (Chas) Williams <ciwillia@vyatta.att-mail.com>  Thu, 11 Nov 2021 21:07:28 -0500
+
 vyatta-mibs-misc (0.15.1) unstable; urgency=medium
 
   [ Philip Downey ]
